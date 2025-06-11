@@ -1,0 +1,336 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: onlineboutique
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: onlineboutique
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: server
+          image: gcr.io/google-samples/microservices-demo/frontend:v0.8.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "productcatalogservice:3550"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currencyservice:7000"
+            - name: CART_SERVICE_ADDR
+              value: "cartservice:7070"
+            - name: RECOMMENDATION_SERVICE_ADDR
+              value: "localhost:0000" # dummy
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shippingservice:50051"
+            - name: CHECKOUT_SERVICE_ADDR
+              value: "checkoutservice:5050"
+            - name: AD_SERVICE_ADDR
+              value: "localhost:0000" # dummy
+            - name: ENV_PLATFORM
+              value: "local"
+
+---
+
+# Redis (used by cartservice)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cart
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: redis-cart
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cart
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cart
+  template:
+    metadata:
+      labels:
+        app: redis-cart
+    spec:
+      containers:
+        - name: redis
+          image: redis:alpine
+          ports:
+            - containerPort: 6379
+
+---
+
+# cartservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: cartservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 7070
+  selector:
+    app: cartservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cartservice
+  template:
+    metadata:
+      labels:
+        app: cartservice
+    spec:
+      containers:
+        - name: cartservice
+          image: gcr.io/google-samples/microservices-demo/cartservice:v0.8.0
+          ports:
+            - containerPort: 7070
+          env:
+            - name: REDIS_ADDR
+              value: "redis-cart:6379"
+
+---
+
+# checkoutservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkoutservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 5050
+  selector:
+    app: checkoutservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkoutservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkoutservice
+  template:
+    metadata:
+      labels:
+        app: checkoutservice
+    spec:
+      containers:
+        - name: checkoutservice
+          image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.8.0
+          ports:
+            - containerPort: 5050
+          env:
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "productcatalogservice:3550"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shippingservice:50051"
+            - name: PAYMENT_SERVICE_ADDR
+              value: "paymentservice:50051"
+            - name: EMAIL_SERVICE_ADDR
+              value: "localhost:0000"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currencyservice:7000"
+            - name: CART_SERVICE_ADDR
+              value: "cartservice:7070"
+
+---
+
+# productcatalogservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: productcatalogservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 3550
+  selector:
+    app: productcatalogservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productcatalogservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: productcatalogservice
+  template:
+    metadata:
+      labels:
+        app: productcatalogservice
+    spec:
+      containers:
+        - name: productcatalogservice
+          image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.8.0
+          ports:
+            - containerPort: 3550
+
+---
+
+# currencyservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: currencyservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 7000
+  selector:
+    app: currencyservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currencyservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: currencyservice
+  template:
+    metadata:
+      labels:
+        app: currencyservice
+    spec:
+      containers:
+        - name: currencyservice
+          image: gcr.io/google-samples/microservices-demo/currencyservice:v0.8.0
+          ports:
+            - containerPort: 7000
+
+---
+
+# paymentservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: paymentservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 50051
+  selector:
+    app: paymentservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymentservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paymentservice
+  template:
+    metadata:
+      labels:
+        app: paymentservice
+    spec:
+      containers:
+        - name: paymentservice
+          image: gcr.io/google-samples/microservices-demo/paymentservice:v0.8.0
+          ports:
+            - containerPort: 50051
+
+---
+
+# shippingservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: shippingservice
+  namespace: onlineboutique
+spec:
+  ports:
+    - port: 50051
+  selector:
+    app: shippingservice
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shippingservice
+  namespace: onlineboutique
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shippingservice
+  template:
+    metadata:
+      labels:
+        app: shippingservice
+    spec:
+      containers:
+        - name: shippingservice
+          image: gcr.io/google-samples/microservices-demo/shippingservice:v0.8.0
+          ports:
+            - containerPort: 50051
