@@ -260,6 +260,9 @@ spec:
           image: gcr.io/google-samples/microservices-demo/currencyservice:v0.8.0
           ports:
             - containerPort: 7000
+          env:
+            - name: PORT
+              value: "7000"  
 
 ---
 
@@ -297,6 +300,9 @@ spec:
           image: gcr.io/google-samples/microservices-demo/paymentservice:v0.8.0
           ports:
             - containerPort: 50051
+          env:
+            - name: PORT
+              value: "50051"  
 
 ---
 
